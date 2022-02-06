@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+use reqwest::header::AUTHORIZATION;
 mod model;
 
 #[tokio::main]
@@ -20,19 +22,51 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Now that we know we can deserialize a hard-coded JSON into a struct model,
     // let's see if we can fetch the weather from the backend.
     //
+    
+    // This will POST a body of `{"lang":"rust","body":"json"}`
+    //Reference : https://docs.rs/reqwest/latest/reqwest/
+    let mut map = HashMap::new();
+    map.insert("username", "kedar");
+    map.insert("password", "password1");
 
-    let client = reqwest::Client::new();
+    let auth_client = reqwest::Client::new();
+    let auth_response = auth_client
+      .post("http://localhost:3000/v1/auth") 
+      .json(&map)
+      .send()
+      .await?;
 
-    let response = client
-        .get("https://api.openweathermap.org/data/2.5/weather?q=corvallis&appid=b98e3f089c86867862f28236d174368a&&units=imperial")
+    println!("\nMessage from Auth URL:\n {:?}", auth_response);
+    let auth_token = auth_response
+      .json::<model::AuthToken>()
+      .await?;
+    
+    let token = auth_token.token;
+/*
+    let client1 = reqwest::Client::new();
+    let response1 = client1
+        .get("http://localhost:3000/v1/Weather")
+        .header(AUTHORIZATION, &token)
         .send()
         .await?;
 
-    let weather2 = response
+    let weather2 = response1
         .json::<model::Weather>()
         .await?;
 
     println!("\nWeather from openweathermap.org:\n {:?}", weather2);
+*/  
+    let client2 = reqwest::Client::new();
+    let response2 = client2
+        .get("http://localhost:3000/v1/hello")
+        .header(AUTHORIZATION,&token)
+        .send()
+        .await?;
 
+    let hello = response2
+        .json::<model::Hello>()
+        .await?;
+    
+    println!("\nMessage from Greeting URL:\n {:?}", hello);
     Ok(())
 }
